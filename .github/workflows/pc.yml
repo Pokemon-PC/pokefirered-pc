@@ -1,0 +1,85 @@
+# Native PC build (src/platform_pc): tools, game data, FireRed and LeafGreen
+# executables, ctest. The GBA ROM build stays in build.yml;
+# check_gba_sources.py proves the PC changes leave the GBA sources untouched.
+name: PC port
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # check_gba_sources.py compares with the last pret commit
+      - name: Packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang ninja-build cmake python3 binutils make libpng-dev zlib1g-dev \
+            libasound2-dev libpulse-dev libx11-dev libxext-dev libgl-dev
+      - name: GBA sources unchanged
+        run: python3 src/platform_pc/scripts/check_gba_sources.py
+      - name: Decomp tools
+        run: |
+          cmake -S src/platform_pc/tools -B build-tools -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build-tools
+      - name: Game data
+        run: python3 src/platform_pc/scripts/gen_assets.py -j 4
+      - name: FireRed
+        run: |
+          cmake -B build-pc -G Ninja -DCMAKE_C_COMPILER=clang
+          cmake --build build-pc
+          cd build-pc && ctest --output-on-failure
+      - name: LeafGreen
+        run: |
+          cmake -B build-lg -G Ninja -DCMAKE_C_COMPILER=clang -DPFR_GAME_VERSION=LEAFGREEN
+          cmake --build build-lg
+          cd build-lg && ctest --output-on-failure
+      - name: Package
+        run: python3 src/platform_pc/scripts/package.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pokefirered-pc-linux
+          path: dist/*.zip
+
+  windows:
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: >-
+            mingw-w64-x86_64-clang mingw-w64-x86_64-lld mingw-w64-x86_64-binutils
+            mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-python mingw-w64-x86_64-libpng make git
+      - name: GBA sources unchanged
+        run: python src/platform_pc/scripts/check_gba_sources.py
+      - name: Decomp tools
+        run: |
+          cmake -S src/platform_pc/tools -B build-tools -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build-tools
+      - name: Game data
+        run: python src/platform_pc/scripts/gen_assets.py -j 4
+      - name: FireRed
+        run: |
+          cmake -B build-pc -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_LINKER_TYPE=LLD
+          cmake --build build-pc
+          cd build-pc && ctest --output-on-failure
+      - name: LeafGreen
+        run: |
+          cmake -B build-lg -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_LINKER_TYPE=LLD -DPFR_GAME_VERSION=LEAFGREEN
+          cmake --build build-lg
+          cd build-lg && ctest --output-on-failure
+      - name: Package
+        run: python src/platform_pc/scripts/package.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pokefirered-pc-windows
+          path: dist/*.zip

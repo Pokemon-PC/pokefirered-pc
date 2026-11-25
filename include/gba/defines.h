@@ -6,6 +6,20 @@
 #define TRUE  1
 #define FALSE 0
 
+#ifdef PLATFORM_PC
+// Plain globals on PC: the build gathers all game variables in one
+// section, saved at startup and restored by a soft reset.
+#define IWRAM_DATA
+#define EWRAM_DATA
+#define COMMON_DATA
+// Pointer field or table element kept 32-bit wide, as laid out by the
+// assembly data (.4byte); zero-extended when read. MinGW defines
+// __ptr32/__uptr as empty macros for GCC: undo that for Clang.
+#undef __ptr32
+#undef __uptr
+#define PC_PTR32 __ptr32 __uptr
+#else
+#define PC_PTR32
 #if defined(__APPLE__)
 #define IWRAM_DATA __attribute__((section("__DATA,iwram_data")))
 #define EWRAM_DATA __attribute__((section("__DATA,ewram_data")))
@@ -14,6 +28,7 @@
 #define EWRAM_DATA __attribute__((section("ewram_data")))
 #endif
 #define COMMON_DATA __attribute__((section("common_data")))
+#endif
 
 #if MODERN
 #define NOINLINE __attribute__((noinline))

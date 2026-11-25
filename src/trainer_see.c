@@ -518,6 +518,9 @@ static void Task_RevealTrainer_RunTrainerSeeFuncList(u8 taskId)
     struct ObjectEvent * trainerObj;
 
     // another objEvent loaded into by loadword?
+#ifdef PLATFORM_PC
+    trainerObj = NULL; // LoadWordFromTwoHalfwords only writes the low 32 bits
+#endif
     LoadWordFromTwoHalfwords((u16 *)&task->data[1], (u32 *)&trainerObj);
     if (!task->data[7])
     {

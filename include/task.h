@@ -20,6 +20,11 @@ struct Task
     u8 next;
     u8 priority;
     s16 data[NUM_TASK_DATA];
+#ifdef PLATFORM_PC
+    // Room for structs the game overlays on data[] that grow with 64-bit
+    // pointers (struct ListMenu: 48 bytes). Contiguous with data[].
+    s16 pcDataOverflow[16];
+#endif
 };
 
 extern struct Task gTasks[];

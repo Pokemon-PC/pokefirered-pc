@@ -451,7 +451,13 @@ static u8 CopySaveSlotData(u16 sectorId, const struct SaveSectorLocation *locati
         if (id == 0)
             gLastWrittenSector = i;
 
+#ifdef PLATFORM_PC
+        // An erased sector has id 0xFFFF: the GBA reads past locations[]
+        // harmlessly (the checksum is not used then), a PC may fault.
+        checksum = CalculateChecksum(gSaveDataBufferPtr->data, id < NUM_SECTORS_PER_SLOT ? locations[id].size : 0);
+#else
         checksum = CalculateChecksum(gSaveDataBufferPtr->data, locations[id].size);
+#endif
         if (gSaveDataBufferPtr->signature == SECTOR_SIGNATURE && gSaveDataBufferPtr->checksum == checksum)
         {
             u16 j;

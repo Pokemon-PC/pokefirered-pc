@@ -2711,6 +2711,9 @@ static void ShowMonEffect_Outdoors_6(struct Task *task)
 static void ShowMonEffect_Outdoors_7(struct Task *task)
 {
     IntrCallback callback;
+#ifdef PLATFORM_PC
+    callback = NULL; // LoadWordFromTwoHalfwords only writes the low 32 bits
+#endif
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&callback);
     SetVBlankCallback(callback);
     ChangeBgX(0, 0, 0);
@@ -2725,6 +2728,9 @@ static void VBlankCB_ShowMonEffect_Outdoors(void)
 {
     IntrCallback callback;
     struct Task *task = &gTasks[FindTaskIdByFunc(Task_ShowMon_Outdoors)];
+#ifdef PLATFORM_PC
+    callback = NULL; // LoadWordFromTwoHalfwords only writes the low 32 bits
+#endif
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&callback);
     callback();
     SetGpuReg(REG_OFFSET_WIN0H, task->data[1]);
@@ -2830,6 +2836,9 @@ static void ShowMonEffect_Indoors_7(struct Task *task)
     u16 charbase;
     charbase = (GetGpuReg(REG_OFFSET_BG0CNT) >> 8) << 11;
     CpuFill32(0, (void *)VRAM + charbase, 0x800);
+#ifdef PLATFORM_PC
+    intrCallback = NULL; // LoadWordFromTwoHalfwords only writes the low 32 bits
+#endif
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&intrCallback);
     SetVBlankCallback(intrCallback);
     ChangeBgX(0, 0, 0);
@@ -2845,6 +2854,9 @@ static void VBlankCB_ShowMonEffect_Indoors(void)
     IntrCallback intrCallback;
     struct Task *task;
     task = &gTasks[FindTaskIdByFunc(Task_ShowMon_Indoors)];
+#ifdef PLATFORM_PC
+    intrCallback = NULL; // LoadWordFromTwoHalfwords only writes the low 32 bits
+#endif
     LoadWordFromTwoHalfwords((u16 *)&task->data[13], (u32 *)&intrCallback);
     intrCallback();
     SetGpuReg(REG_OFFSET_BG0HOFS, task->data[1]);

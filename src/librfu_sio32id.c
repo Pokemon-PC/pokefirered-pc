@@ -44,7 +44,11 @@ s32 AgbRFU_checkID(u8 maxTries)
         regTMCNTL[0] = 0;
         regTMCNTL[1] = TIMER_1024CLK | TIMER_ENABLE;
         while (regTMCNTL[0] < 32)
+#ifdef PLATFORM_PC
+            pc_advance_line(); // the timer only counts when time passes
+#else
             ;
+#endif
         regTMCNTL[1] = 0;
         regTMCNTL[0] = 0;
     }

@@ -37,7 +37,7 @@
 #include "constants/pokemon.h"
 #include "constants/maps.h"
 
-extern const u8 *const gBattleScriptsForMoveEffects[];
+extern const u8 *const PC_PTR32 gBattleScriptsForMoveEffects[];
 
 #define DEFENDER_IS_PROTECTED ((gProtectStructs[gBattlerTarget].protected) && (gBattleMoves[gCurrentMove].flags & FLAG_PROTECT_AFFECTED))
 

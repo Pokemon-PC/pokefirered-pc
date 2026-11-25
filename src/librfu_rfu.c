@@ -152,11 +152,20 @@ u16 rfu_initializeAPI(u32 *APIBuffer, u16 buffByteSize, IntrFunc *sioIntrTable_p
         if (buffByteSize < buffByteSizeMax)
             return ERR_RFU_API_BUFF_SIZE;
     }
+#ifdef PLATFORM_PC
+    // Same order, sizes of the host structs (several hold pointers).
+    gRfuLinkStatus = (void *)APIBuffer + 0;
+    gRfuStatic = (void *)((u8 *)gRfuLinkStatus + ((sizeof(*gRfuLinkStatus) + 7) & ~7));
+    gRfuFixed = (void *)((u8 *)gRfuStatic + ((sizeof(*gRfuStatic) + 7) & ~7));
+    gRfuSlotStatusNI[0] = (void *)((u8 *)gRfuFixed + ((sizeof(*gRfuFixed) + 7) & ~7));
+    gRfuSlotStatusUNI[0] = (void *)(gRfuSlotStatusNI[0] + RFU_CHILD_MAX);
+#else
     gRfuLinkStatus = (void *)APIBuffer + 0;
     gRfuStatic = (void *)APIBuffer + 0xb4; // + sizeof(*gRfuLinkStatus)
     gRfuFixed = (void *)APIBuffer + 0xdc; // + sizeof(*gRfuStatic)
     gRfuSlotStatusNI[0] = (void *)APIBuffer + 0x1bc; // + sizeof(*gRfuFixed)
     gRfuSlotStatusUNI[0] = (void *)APIBuffer + 0x37c; // + sizeof(*gRfuSlotStatusNI[0]) * RFU_CHILD_MAX
+#endif
     for (i = 1; i < RFU_CHILD_MAX; ++i)
     {
         gRfuSlotStatusNI[i] = &gRfuSlotStatusNI[i - 1][1];
@@ -372,7 +381,11 @@ void rfu_REQ_stopMode(void)
             *timerReg = 0;
             *timerReg = (TIMER_ENABLE | TIMER_1024CLK) << 16;
             while (*timerReg << 16 < 262 << 16)
+#ifdef PLATFORM_PC
+                pc_advance_line(); // the timer only counts when time passes
+#else
                 ;
+#endif
             *timerReg = 0;
             STWI_set_Callback_M(rfu_CB_stopMode);
             STWI_send_StopModeREQ();

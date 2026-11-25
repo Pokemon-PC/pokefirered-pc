@@ -40,7 +40,7 @@ AI scripts.
 */
 
 static EWRAM_DATA const u8 *sAIScriptPtr = NULL;
-extern u8 *gBattleAI_ScriptsTable[];
+extern u8 *PC_PTR32 gBattleAI_ScriptsTable[];
 
 static void Cmd_if_random_less_than(void);
 static void Cmd_if_random_greater_than(void);

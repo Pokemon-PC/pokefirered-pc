@@ -37,7 +37,7 @@ EWRAM_DATA u8 sSpecialFlags[SPECIAL_FLAGS_SIZE] = {};
 
 COMMON_DATA u16 gLastQuestLogStoredFlagOrVarIdx = 0;
 
-extern u16 *const gSpecialVars[];
+extern u16 *const PC_PTR32 gSpecialVars[];
 
 void InitEventData(void)
 {

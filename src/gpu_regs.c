@@ -69,7 +69,13 @@ void SetGpuReg(u8 regOffset, u16 value)
 		u16 vcount;
 
 		GPU_REG_BUF(regOffset) = value;
+#ifdef PLATFORM_PC
+		// On PC the main loop runs between two frames (lines are drawn while
+		// it waits for VBlank); only IRQ handlers run "during" a line.
+		vcount = pc_vcount_for_game_code() & 0xFF;
+#else
 		vcount = REG_VCOUNT & 0xFF;
+#endif
 
 		if ((vcount >= 161 && vcount <= 225)
 		 || (REG_DISPCNT & DISPCNT_FORCED_BLANK)) {

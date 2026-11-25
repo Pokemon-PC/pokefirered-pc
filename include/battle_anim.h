@@ -181,15 +181,15 @@ extern const union AnimCmd *const gAnims_BasicFire[];
 extern const union AnimCmd *const gAnims_WaterMudOrb[];
 extern const union AnimCmd *const gAnims_WaterBubble[];
 extern const union AnimCmd *const gMusicNotesAnimTable[];
-extern const u8 *const gBattleAnims_StatusConditions[];
-extern const u8 *const gBattleAnims_Moves[];
+extern const u8 *const PC_PTR32 gBattleAnims_StatusConditions[];
+extern const u8 *const PC_PTR32 gBattleAnims_Moves[];
 extern const u16 gMovesWithQuietBGM[];
 
 void MoveBattlerSpriteToBG(u8 battlerId, u8);
 void ResetBattleAnimBg(u8);
 void ClearBattleAnimationVars(void);
 void DoMoveAnim(u16 move);
-void LaunchBattleAnimation(const u8 *const animsTable[], u16 tableId, bool8 isMoveAnim);
+void LaunchBattleAnimation(const u8 *const PC_PTR32 animsTable[], u16 tableId, bool8 isMoveAnim);
 void DestroyAnimSprite(struct Sprite *sprite);
 void DestroyAnimVisualTask(u8 taskId);
 void DestroyAnimSoundTask(u8 taskId);

@@ -503,7 +503,17 @@ bool8 IsDma3ManagerBusyWithBgCopy(void)
         {
             s8 reqSpace = WaitDma3Request(i);
             if (reqSpace == -1)
+#ifdef PLATFORM_PC
+            {
+                // The VBlank IRQ drains the DMA queue. Callers often poll this
+                // in a loop within one frame (map load, bag, region map...):
+                // on the GBA the IRQ fires meanwhile, on PC time must pass.
+                pc_advance_line();
                 return TRUE;
+            }
+#else
+                return TRUE;
+#endif
             sDmaBusyBitfield[div] &= ~(1 << mod);
         }
     }

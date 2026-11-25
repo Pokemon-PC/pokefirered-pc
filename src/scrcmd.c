@@ -41,8 +41,8 @@
 
 extern u16 (*const gSpecials[])(void);
 extern u16 (*const gSpecialsEnd[])(void);
-extern const u8 *const gStdScripts[];
-extern const u8 *const gStdScriptsEnd[];
+extern const u8 *const PC_PTR32 gStdScripts[];
+extern const u8 *const PC_PTR32 gStdScriptsEnd[];
 
 static bool8 ScriptContext_NextCommandEndsScript(struct ScriptContext * ctx);
 static u8 ScriptContext_GetQuestLogInput(struct ScriptContext * ctx);
@@ -212,7 +212,7 @@ bool8 ScrCmd_vcall_if(struct ScriptContext * ctx)
 bool8 ScrCmd_gotostd(struct ScriptContext * ctx)
 {
     u8 stdIdx = ScriptReadByte(ctx);
-    const u8 *const * script = &gStdScripts[stdIdx];
+    const u8 *const PC_PTR32 * script = &gStdScripts[stdIdx];
     if (script < gStdScriptsEnd)
         ScriptJump(ctx, *script);
     return FALSE;
@@ -221,7 +221,7 @@ bool8 ScrCmd_gotostd(struct ScriptContext * ctx)
 bool8 ScrCmd_callstd(struct ScriptContext * ctx)
 {
     u8 stdIdx = ScriptReadByte(ctx);
-    const u8 *const * script = &gStdScripts[stdIdx];
+    const u8 *const PC_PTR32 * script = &gStdScripts[stdIdx];
     if (script < gStdScriptsEnd)
         ScriptCall(ctx, *script);
     return FALSE;
@@ -233,7 +233,7 @@ bool8 ScrCmd_gotostd_if(struct ScriptContext * ctx)
     u8 stdIdx = ScriptReadByte(ctx);
     if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)
     {
-        const u8 *const * script = gStdScripts + stdIdx;
+        const u8 *const PC_PTR32 * script = gStdScripts + stdIdx;
         if (script < gStdScriptsEnd)
             ScriptJump(ctx, *script);
     }
@@ -246,7 +246,7 @@ bool8 ScrCmd_callstd_if(struct ScriptContext * ctx)
     u8 stdIdx = ScriptReadByte(ctx);
     if (sScriptConditionTable[condition][ctx->comparisonResult] == 1)
     {
-        const u8 *const * script = gStdScripts + stdIdx;
+        const u8 *const PC_PTR32 * script = gStdScripts + stdIdx;
         if (script < gStdScriptsEnd)
             ScriptCall(ctx, *script);
     }

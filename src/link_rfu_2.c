@@ -79,7 +79,12 @@ static EWRAM_DATA struct RfuDebug sRfuDebug = {};
 
 #if REVISION >= 0xA
 #else
+#ifdef PLATFORM_PC
+// The library's structs are larger with 64-bit pointers (see rfu_initializeAPI).
+static u32 sRfuAPIBuffer[0x1800 / 4];
+#else
 static u32 sRfuAPIBuffer[RFU_API_BUFF_SIZE_RAM / 4];
+#endif
 #endif
 static u8 sResendBlock8[CMD_LENGTH * 2];
 static u16 sResendBlock16[CMD_LENGTH];
@@ -315,7 +320,12 @@ void InitRFU(void)
 
 void InitRFUAPI(void)
 {
+#ifdef PLATFORM_PC
+    // No ARM code to copy to RAM: the ROM variant of the serial handler.
+    if (!rfu_initializeAPI(sRfuAPIBuffer, sizeof(sRfuAPIBuffer), &gIntrTable[1], FALSE))
+#else
     if (!rfu_initializeAPI(sRfuAPIBuffer, RFU_API_BUFF_SIZE_RAM, &gIntrTable[1], TRUE))
+#endif
     {
         gLinkType = 0;
         // ClearSavedLinkPlayers(); // Em fix

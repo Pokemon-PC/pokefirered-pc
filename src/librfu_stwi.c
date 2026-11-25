@@ -67,7 +67,14 @@ void AgbRFU_SoftReset(void)
     *timerL = 0;
     *timerH = TIMER_ENABLE | TIMER_1024CLK;
     while (*timerL <= 0x11)
+#ifdef PLATFORM_PC
+    {
         REG_RCNT = 0x80A2;
+        pc_advance_line(); // the timer only counts when time passes
+    }
+#else
+        REG_RCNT = 0x80A2;
+#endif
     *timerH = 3;
     REG_RCNT = 0x80A0;
     REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;
@@ -137,7 +144,11 @@ void STWI_set_Callback_ID(void (*func)(void)) // name in SDK, but is actually se
 u16 STWI_poll_CommandEnd(void)
 {
     while (gSTWIStatus->sending == 1)
+#ifdef PLATFORM_PC
+        pc_advance_line(); // cleared by the serial interrupt
+#else
         ;
+#endif
     return gSTWIStatus->error;
 }
 

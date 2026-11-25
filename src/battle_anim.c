@@ -197,7 +197,7 @@ void DoMoveAnim(u16 move)
     LaunchBattleAnimation(gBattleAnims_Moves, move, TRUE);
 }
 
-void LaunchBattleAnimation(const u8 *const animsTable[], u16 tableId, bool8 isMoveAnim)
+void LaunchBattleAnimation(const u8 *const PC_PTR32 animsTable[], u16 tableId, bool8 isMoveAnim)
 {
     s32 i;
 
