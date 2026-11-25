@@ -253,8 +253,19 @@ static void run_game(void *arg) {
 }
 
 int main(int argc, char **argv) {
-    (void)argc;
-    (void)argv;
+    const char *cli_rom = NULL, *cli_dir = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--rom") == 0 && i + 1 < argc) {
+            cli_rom = argv[++i];
+        } else if (strncmp(argv[i], "--rom=", 6) == 0) {
+            cli_rom = argv[i] + 6;
+        } else if (strcmp(argv[i], "--rom-dir") == 0 && i + 1 < argc) {
+            cli_dir = argv[++i];
+        } else if (strncmp(argv[i], "--rom-dir=", 10) == 0) {
+            cli_dir = argv[i] + 10;
+        }
+    }
+    pc_rom_set_cli(cli_rom, cli_dir);
     const char *e = getenv("PFR_EXIT_AFTER");
     if (e && *e) {
         s_exit_after = strtol(e, NULL, 10);
@@ -266,6 +277,7 @@ int main(int argc, char **argv) {
     if (!pc_hw_init()) {
         pc_fatal("cannot reserve the GBA memory map");
     }
+    pc_rom_log();
     if (!pc_video_init()) {
         pc_fatal("cannot open the window");
     }

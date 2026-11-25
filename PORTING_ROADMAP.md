@@ -126,3 +126,18 @@ couche `src/platform_pc/`, les scripts, le CMake et les tests sont repris.
     captures vérifiées (Bourg Palette, combat, chambre, salon). Paquet
     `dist/pokefirered-pc-ce6406d8c.zip` (13,4 Mio, les deux exe).
     `check_gba_sources.py` : 0 différence.
+  - Commit `9f95c387a` (branche `pc-port`), publié sur `Pokemon-PC/pokefirered-pc`.
+- **2026-11-25 (ROM)** — Les ROM sont réunies dans un dossier commun, à plat :
+  `D:\LUC\pokemonall\roms` (Rouge Feu FR seulement ; pas de ROM Vert Feuille).
+  - Le port n'utilise toujours **aucune** ROM (tout vient de la décomp, en anglais) ;
+    `rom_pc.c` sait la retrouver, pour le lanceur et de futures fonctions (textes
+    français) : `--rom` / `PFR_ROM` / `[game] rom`, puis dossier de l'exe, puis
+    `--rom-dir` / `PFR_ROM_DIR` / `[game] rom_dir` (vide par défaut). Choix par en-tête
+    (`BPR?`/`BPG?`, somme de contrôle), langue du build puis français puis autres.
+    Journal au démarrage : `rom: … (BPRF)`.
+  - Autotest : + 5 vérifications (fausses en-têtes aux noms trompeurs : choix par
+    en-tête, autre version refusée, somme fausse refusée, ordre des langues,
+    `PFR_ROM_DIR`). `config.ini` locaux de `build-pc`/`build-lg` : `rom_dir` réglé.
+  - Vérifié : `pokefirered.exe` trouve `Pokemon - Version Rouge Feu (France).gba`
+    (BPRF) via `rom_dir`, `PFR_ROM_DIR` et `--rom-dir` ; `pokeleafgreen.exe` : « no
+    ROM found » (aucune ROM Vert Feuille), le jeu tourne quand même.

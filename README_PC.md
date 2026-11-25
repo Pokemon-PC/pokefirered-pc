@@ -69,6 +69,27 @@ Touches, taille de fenêtre, plein écran et volume se règlent dans **`config.i
 créé à côté de l'exe au premier lancement (noms de touches SDL, plusieurs par bouton
 séparés par des virgules). Une manette reconnue par SDL fonctionne aussi.
 
+## ROM du joueur (facultative) : `rom_dir`
+
+Le jeu n'a **pas besoin de ROM** pour tourner : tout est compilé depuis la décomp
+(textes en anglais). Il sait toutefois retrouver la ROM du joueur, pour un lanceur ou
+de futures fonctions (par exemple les textes français) ; au démarrage, le journal
+indique ce qu'il a trouvé (`rom: … (BPRF)`).
+
+```ini
+[game]
+rom =                              ; un fichier précis (facultatif)
+rom_dir = D:\LUC\pokemonall\roms   ; dossier où chercher (à plat)
+```
+
+Ordre de recherche : fichier explicite (`--rom FICHIER`, `PFR_ROM`, `rom`), puis le
+dossier de l'exe, puis le dossier ROM (`--rom-dir DOSSIER`, `PFR_ROM_DIR`, `rom_dir`).
+Dans un dossier, chaque `*.gba` est reconnu par son **en-tête**, jamais par son nom :
+code jeu `BPR?` (Rouge Feu) ou `BPG?` (Vert Feuille), somme de contrôle valide ; la
+4ᵉ lettre est la langue (`E` anglais, `F` français…) : la langue du build d'abord
+(anglais), puis le français, puis les autres. `rom_dir` est vide par défaut ; `rom_dir`
+est aussi accepté avant toute section.
+
 ## Variables d'environnement (tests et débogage)
 
 | Variable | Effet |
@@ -76,6 +97,7 @@ séparés par des virgules). Une manette reconnue par SDL fonctionne aussi.
 | `PFR_SCALE=n` | taille de la fenêtre (×3 par défaut) |
 | `PFR_MUTE=1` | sans son |
 | `PFR_SAVE=f` | autre fichier de sauvegarde |
+| `PFR_ROM=f`, `PFR_ROM_DIR=d` | ROM du joueur, dossier des ROM (comme `--rom`, `--rom-dir`) |
 | `PFR_HEADLESS=1`, `PFR_FAST=1` | sans fenêtre, sans limite de vitesse |
 | `PFR_EXIT_AFTER=N` | quitter après N images |
 | `PFR_INPUT=2600-2604:START,3000-7600/30:A` | touches scriptées (`/P` = appui toutes les P images) |

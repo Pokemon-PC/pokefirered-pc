@@ -74,7 +74,8 @@ add_library(pfr_hal STATIC
     ${PFR_PC_DIR}/timer_pc.c
     ${PFR_PC_DIR}/audio_pc.c
     ${PFR_PC_DIR}/nullread_pc.c
-    ${PFR_PC_DIR}/config_pc.c)
+    ${PFR_PC_DIR}/config_pc.c
+    ${PFR_PC_DIR}/rom_pc.c)
 target_include_directories(pfr_hal PUBLIC ${PFR_PC_DIR})
 target_compile_definitions(pfr_hal PUBLIC PLATFORM_PC=1 ${PFR_VERSION_DEFS})
 target_link_libraries(pfr_hal PUBLIC pfr::SDL2)

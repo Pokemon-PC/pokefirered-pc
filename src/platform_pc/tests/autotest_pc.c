@@ -10,6 +10,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_WIN32)
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 #include "gpu_pc.h"
 #include "hw_pc.h"
@@ -329,6 +335,69 @@ static void test_null_reads(void) {
 #endif
 }
 
+/* -------------------------------------------------------------------- ROM */
+
+/* Writes a fake GBA header (game code, fixed byte, checksum) to dir/name. */
+static void fake_rom(const char *dir, const char *name, const char *code, int bad_sum) {
+    unsigned char h[0x200];
+    memset(h, 0, sizeof h);
+    memcpy(h + 0xA0, "POKEMON TEST", 12);
+    memcpy(h + 0xAC, code, 4);
+    h[0xB2] = 0x96;
+    unsigned char sum = 0;
+    for (int i = 0xA0; i < 0xBD; i++) sum = (unsigned char)(sum - h[i]);
+    h[0xBD] = (unsigned char)(sum - 0x19 + (bad_sum ? 1 : 0));
+    char path[1024];
+    snprintf(path, sizeof path, "%s/%s", dir, name);
+    FILE *f = fopen(path, "wb");
+    if (f) {
+        fwrite(h, 1, sizeof h, f);
+        fclose(f);
+    }
+}
+
+static void test_rom(const char *dir) {
+#if defined(LEAFGREEN)
+    const char *mine = "BPG", *other = "BPR";
+#else
+    const char *mine = "BPR", *other = "BPG";
+#endif
+    char d[1024], code[5], found[1100], lang = 0;
+    snprintf(d, sizeof d, "%s/autotest_roms", dir);
+#if defined(_WIN32)
+    _mkdir(d);
+#else
+    mkdir(d, 0755);
+#endif
+    /* Names are misleading on purpose: only the header counts. */
+    snprintf(code, sizeof code, "%sF", other);
+    fake_rom(d, "a_" PC_GAME_SHORT " (France).gba", code, 0);
+    snprintf(code, sizeof code, "%sE", mine);
+    fake_rom(d, "b_bad_checksum.gba", code, 1);
+    snprintf(code, sizeof code, "%sD", mine);
+    fake_rom(d, "c_german.GBA", code, 0);
+    CHECK(pc_rom_find_in_dir(d, found, sizeof found, &lang) && lang == 'D' && strstr(found, "c_german"),
+          "ROM chosen by header, not name (%c %s)", lang ? lang : '-', found);
+    snprintf(code, sizeof code, "%sF", mine);
+    fake_rom(d, "d_other_name.gba", code, 0);
+    CHECK(pc_rom_find_in_dir(d, found, sizeof found, &lang) && lang == 'F', "French preferred over German (%c)", lang);
+    snprintf(code, sizeof code, "%sE", mine);
+    fake_rom(d, "e.gba", code, 0);
+    CHECK(pc_rom_find_in_dir(d, found, sizeof found, &lang) && lang == 'E', "build language (English) first (%c)", lang);
+    char path[1100];
+    snprintf(path, sizeof path, "%s/a_" PC_GAME_SHORT " (France).gba", d);
+    CHECK(pc_rom_identify(path) == 0, "the other version is refused");
+    set_env("PFR_ROM_DIR", d);
+    CHECK(pc_rom_path() != NULL && pc_rom_language() == 'E', "PFR_ROM_DIR is searched");
+    const char *names[] = {"a_" PC_GAME_SHORT " (France).gba", "b_bad_checksum.gba", "c_german.GBA",
+                           "d_other_name.gba", "e.gba"};
+    for (int i = 0; i < 5; i++) {
+        snprintf(path, sizeof path, "%s/%s", d, names[i]);
+        remove(path);
+    }
+    rmdir(d);
+}
+
 int main(int argc, char **argv) {
     set_env("PFR_HEADLESS", "1");
     set_env("PFR_FAST", "1");
@@ -346,6 +415,7 @@ int main(int argc, char **argv) {
     test_dma_and_irq();
     test_gpu();
     test_flash(dir);
+    test_rom(dir);
     pc_crash_install();
     test_null_reads();
 

@@ -73,6 +73,14 @@ void pc_flash_flush(void);
 const char *pc_config_get(const char *section, const char *key, const char *def);
 int pc_config_int(const char *section, const char *key, int def);
 
+/* ---- the player's ROM (rom_pc.c): optional, found by header ---------------- */
+void pc_rom_set_cli(const char *rom, const char *dir);   /* --rom / --rom-dir */
+char pc_rom_identify(const char *path);                  /* language letter, 0 = not this game */
+bool pc_rom_find_in_dir(const char *dir, char *found, size_t n, char *lang);
+const char *pc_rom_path(void);                           /* NULL if none */
+char pc_rom_language(void);
+void pc_rom_log(void);
+
 /* ---- sound output (audio_pc.c) -------------------------------------------- */
 void pc_audio_init(void);   /* PFR_MUTE=1: no device; PFR_WAV=file.wav: record */
 /* One VBlank of DirectSound (FIFO A = right, FIFO B = left, n samples at the

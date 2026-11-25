@@ -97,6 +97,11 @@ def main_smoke(exe, work):
     if crashed(rc, log):
         errors.append(f"exit {rc}, crash or hang reported")
     check_frames(work, ("copyright", "intro", "title1", "title2", "controls", "oak"), errors)
+    # The ROM is optional (CI has none): only show what the lookup found.
+    for line in log.splitlines():
+        if "rom:" in line:
+            print(line.strip())
+            break
     shots = {n: os.path.join(work, n + ".bmp") for n in ("title1", "title2", "controls", "oak")}
     if all(os.path.exists(p) for p in shots.values()):
         t1, t2, controls, oak = (frame_bytes(shots[n]) for n in ("title1", "title2", "controls", "oak"))
