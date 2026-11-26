@@ -51,6 +51,36 @@ else()
     set(PFR_GAME_DATA_SECTION "pfr_game")
 endif()
 
+# French text (src/platform_pc/lang_pc.c): room and registry for each string
+# of the map, filled at run time from the player's own French ROM of this
+# game. One map per game (positions in its French ROM, no text), made by
+# scripts/lang/build_fr_map.py: fr_bprf.tsv (FireRed). LeafGreen has none
+# yet (no French LeafGreen ROM was available): English only.
+if(PFR_GAME_VERSION STREQUAL "LEAFGREEN")
+    set(PFR_LANG_MAP ${PFR_ROOT}/src/platform_pc/lang/fr_bpgf.tsv)
+else()
+    set(PFR_LANG_MAP ${PFR_ROOT}/src/platform_pc/lang/fr_bprf.tsv)
+endif()
+if(WIN32)
+    set(PFR_LANG_SECTION ".rdata$pfrlang1")
+elseif(APPLE)
+    set(PFR_LANG_SECTION "__DATA,__pfrlang")
+else()
+    set(PFR_LANG_SECTION "pfr_lang")
+endif()
+set(PFR_LANG_C_ARGS)
+set(PFR_LANG_S_ARGS)
+set(PFR_LANG_DEPS)
+if(EXISTS ${PFR_LANG_MAP})
+    set(PFR_LANG_C_ARGS --lang-map ${PFR_LANG_MAP} --lang-section ${PFR_LANG_SECTION})
+    set(PFR_LANG_S_ARGS --lang-map ${PFR_LANG_MAP})
+    set(PFR_LANG_DEPS ${PFR_LANG_MAP} ${PFR_ROOT}/src/platform_pc/scripts/lang/lang_build.py)
+    message(STATUS "French text map: ${PFR_LANG_MAP}")
+    set(PFR_HAVE_LANG_MAP 1)
+else()
+    message(STATUS "No French text map (${PFR_LANG_MAP}): English only")
+endif()
+
 set(PFR_PP_DIR ${CMAKE_CURRENT_BINARY_DIR}/pp)
 set(PFR_GAME_PP_SOURCES)
 foreach(src ${PFR_GAME_SOURCES})
@@ -60,9 +90,9 @@ foreach(src ${PFR_GAME_SOURCES})
         OUTPUT ${out}
         COMMAND ${Python3_EXECUTABLE} ${PFR_ROOT}/src/platform_pc/scripts/pp_c.py
                 --clang ${CMAKE_C_COMPILER} --preproc ${PFR_PREPROC} --root ${PFR_ROOT}
-                --out ${out} --dep ${out}.d --data-section ${PFR_GAME_DATA_SECTION}
+                --out ${out} --dep ${out}.d --data-section ${PFR_GAME_DATA_SECTION} ${PFR_LANG_C_ARGS}
                 -- ${PFR_CPP_FLAGS} ${PFR_ROOT}/${src}
-        DEPENDS ${PFR_ROOT}/${src} ${PFR_ROOT}/src/platform_pc/scripts/pp_c.py
+        DEPENDS ${PFR_ROOT}/${src} ${PFR_ROOT}/src/platform_pc/scripts/pp_c.py ${PFR_LANG_DEPS}
         DEPFILE ${out}.d
         COMMENT "preproc ${src}"
         VERBATIM)
@@ -125,10 +155,10 @@ foreach(src ${PFR_DATA_ASM})
         OUTPUT ${obj}
         COMMAND ${Python3_EXECUTABLE} ${PFR_ROOT}/src/platform_pc/scripts/pp_s.py ${PFR_PP_S_FLAGS}
                 --clang ${CMAKE_C_COMPILER} --preproc ${PFR_PREPROC} --root ${PFR_ROOT}
-                --out ${pps} --dep ${pps}.d
+                --out ${pps} --dep ${pps}.d ${PFR_LANG_S_ARGS}
                 -- -iquote ${PFR_ROOT}/include -DMODERN=1 -DPLATFORM_PC=1 ${PFR_ROOT}/${src}
         COMMAND ${PFR_GNU_AS} ${PFR_AS_DEFSYMS} -I ${PFR_ROOT} -I ${PFR_ROOT}/include -o ${obj} ${pps}
-        DEPENDS ${PFR_ROOT}/${src} ${PFR_ROOT}/src/platform_pc/scripts/pp_s.py
+        DEPENDS ${PFR_ROOT}/${src} ${PFR_ROOT}/src/platform_pc/scripts/pp_s.py ${PFR_LANG_DEPS}
         DEPFILE ${pps}.d
         WORKING_DIRECTORY ${PFR_ROOT}
         COMMENT "asm ${src}"
@@ -171,7 +201,12 @@ add_executable(${PFR_EXE_NAME}
     ${PFR_ROOT}/src/platform_pc/layout_check_pc.c
     ${PFR_ROOT}/src/platform_pc/debug_pc.c
     ${PFR_ROOT}/src/platform_pc/isagbprn_pc.c
+    ${PFR_ROOT}/src/platform_pc/lang_pc.c
+    ${PFR_ROOT}/src/platform_pc/lang_tables_pc.c
     ${PFR_GAME_DATA_OBJS})
+if(PFR_HAVE_LANG_MAP)
+    set_source_files_properties(${PFR_ROOT}/src/platform_pc/lang_pc.c PROPERTIES COMPILE_DEFINITIONS PFR_HAVE_LANG_MAP=1)
+endif()
 target_link_libraries(${PFR_EXE_NAME} PRIVATE pfr_game pfr_hal_game pfr_hal pfr_game_flags pfr::SDL2main pfr::SDL2)
 pfr_low_address_link(${PFR_EXE_NAME})
 if(WIN32 AND CMAKE_C_COMPILER_LINKER_ID STREQUAL "LLD")   # lld-only option (all undefined symbols)
@@ -196,3 +231,14 @@ add_test(NAME game_save
          COMMAND ${Python3_EXECUTABLE} ${PFR_ROOT}/src/platform_pc/scripts/smoke_test.py --save
                  $<TARGET_FILE:${PFR_EXE_NAME}> ${CMAKE_CURRENT_BINARY_DIR}/savetest)
 set_tests_properties(game_save PROPERTIES TIMEOUT 900)
+
+# French text (only with your own French ROM, never in the repository),
+# found in the common ROM folder by its header:
+#   cmake -DPFR_ROM_DIR="D:/path/to/roms"        (the config.ini rom_dir)
+set(PFR_ROM_DIR "" CACHE PATH "Folder of your ROMs (rom_dir), for the game_french test")
+if(PFR_ROM_DIR AND EXISTS ${PFR_LANG_MAP})
+    add_test(NAME game_french
+             COMMAND ${Python3_EXECUTABLE} ${PFR_ROOT}/src/platform_pc/scripts/smoke_test.py --french
+                     $<TARGET_FILE:${PFR_EXE_NAME}> ${CMAKE_CURRENT_BINARY_DIR}/frenchtest ${PFR_ROM_DIR})
+    set_tests_properties(game_french PROPERTIES TIMEOUT 1500)
+endif()

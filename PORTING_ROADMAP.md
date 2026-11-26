@@ -74,6 +74,7 @@ couche `src/platform_pc/`, les scripts, le CMake et les tests sont repris.
 | M5 Son | MP2K en C (repris) | musique de l'intro non muette | ✅ Linux (écoute à faire) |
 | M6 Jeu | nouvelle partie, monde, combat, menus, sauvegarde/reprise, `config.ini`, paquet | tests CTest | ✅ Linux, Rouge Feu et Vert Feuille (4/4 chacun) |
 | M7 Linux / Windows | build + tests | ctest vert | ✅ Linux et Windows (4/4 chaque version) ; CI écrite, pas exécutée |
+| M8 Langues | anglais (décomp) **et** français (ROM FR du joueur), `language = auto\|fr\|en`, `--lang`, `PFR_LANG` | les deux langues testées | ✅ Rouge Feu (`game_french`, Windows et Linux) ; ⏳ Vert Feuille : ROM FR reçue, table à construire (voir journal) |
 
 ## À faire par l'utilisateur
 
@@ -141,3 +142,76 @@ couche `src/platform_pc/`, les scripts, le CMake et les tests sont repris.
   - Vérifié : `pokefirered.exe` trouve `Pokemon - Version Rouge Feu (France).gba`
     (BPRF) via `rom_dir`, `PFR_ROM_DIR` et `--rom-dir` ; `pokeleafgreen.exe` : « no
     ROM found » (aucune ROM Vert Feuille), le jeu tourne quand même.
+- **2026-11-26 — Français (Rouge Feu)**, d'après la méthode d'Émeraude/Rubis
+  (skill `nds-decomp-pc-port`, réf. 09 §4) : textes tirés de la ROM FR du joueur au
+  lancement, aucun texte de Nintendo dans le dépôt (seulement des positions).
+  - Outils `src/platform_pc/scripts/lang/` repris de Rubis et adaptés : ROM `BPRF`
+    rév. 0 (sha1 `fc663907…`, CRC-32 `5DC668F6`), ordre de liaison `ld_script.ld`,
+    défisym `FIRERED`, tables de Rouge Feu (`find_fr_tables.py` : 8 tables, toutes
+    gagnées nettement, 100 % des entrées dans leur champ ; vérifiées en décodant).
+  - `build_fr_map.py` → `lang/fr_bprf.tsv` : **7 577 / 9 279 textes (81,7 %)**.
+    Échantillons relus (40 paires par méthode) : pointeurs de scripts, positions et
+    tables ≈ 100 % justes ; alignement ≈ 1 faute sur 6 → règles ajoutées :
+    - une paire alignée n'est gardée qu'encadrée par deux paires sûres (l'exception
+      `strings.c` de Rubis ne tient pas ici) ; alignements dans les scripts écartés ;
+    - un même texte FR donné à plusieurs textes anglais différents → écarté (Salle
+      Union : table mal lue) ; paires relues fausses (`REVIEWED_WRONG` : accueils du
+      Club Câble décalés d'un texte) ;
+    - jamais de bytecode : étiquettes `AI_`/`BattleScript_`… et unités d'un caractère
+      (`AI_CV_Trick_ChoiceEffects` aurait corrompu le script d'IA) ;
+    - habitats du Pokédex : table FR `{texte, id}` avec un titre en tête → entrée
+      suivante (+8) ; noms de lieux : table de pointeurs FR trouvée par « BOURG
+      PALETTE » + « JADIELLE » (109/109) ; préfixes de combat « Wild/Foe/Ally » →
+      « sauvage/ennemi/ami » (8 chaînes consécutives, vérifiées) ;
+    - 302 libellés courts relus un par un (`lang/fr_bprf_reviewed.txt`, noms de
+      symboles seulement) ; alias pour l'encadré de sauvegarde, le « CANCEL » du sac
+      et « COMMANDES » (même texte anglais, même rôle).
+  - Build : `pp_c.py`/`pp_s.py --lang-map` (place réservée + registre, section
+    `.rdata$pfrlang1` / `pfr_lang`), seulement si la table existe (Rouge Feu).
+  - Exécution : `lang_pc.c` (ROM cherchée par `rom_pc.c` avec le filtre de langue
+    `F`, vérifiée par CRC, copie **avant** l'instantané du reset doux),
+    `lang_tables_pc.c` (8 tables de noms). `battle_message.c` (sous `PLATFORM_PC`) :
+    en français le nom puis « sauvage » / « ennemi », comme le jeu français.
+  - Choix : `config.ini [game] language = auto|en|fr` (défaut `auto`), `--lang`,
+    `PFR_LANG`. Les tests anglais forcent `PFR_LANG=en` (touches calées sur le texte
+    anglais ; avec `rom_dir` réglé, `auto` passerait en français).
+  - **Vu en français** (captures) : discours du Prof. Chen, guide des commandes, chambre,
+    salon, Bourg Palette, « Un RATTATA sauvage… », « RATTATA sauvage utilise
+    MIMI-QUEUE! », « Que doit faire SALAMECHE? », ATTAQUE/SAC/POKéMON/FUITE, menu
+    Start (SAC/SAUVER/OPTIONS/RETOUR), sac (« FERMER LE SAC »), carte de dresseur
+    (NOM, ARGENT, NºID), sauvegarde (« Voulez-vous sauvegarder », « SAUVEGARDE EN
+    COURS… », encadré BOURG PALETTE).
+  - Le français est plus long : le joueur a la main dans sa chambre vers l'image
+    7 908 (≈ 190 plus tard) → parcours du test français décalé de 250 images.
+  - Test `game_french` (`-DPFR_ROM_DIR=…`) : ROM prise dans `rom_dir`, ≥ 5 000 textes,
+    8 tables à ≥ 90 %, Bourg Palette atteint, combat lancé, l'image du Prof. Chen
+    diffère en anglais. **Windows : Rouge Feu 5/5, Vert Feuille 4/4 ; Linux (WSL) :
+    Rouge Feu 5/5** (build par `tools/heavy.sh`, file WSL, 5 tâches). `check_gba_sources.py` : 0 différence.
+  - Restent anglais : ~18 % de textes non placés avec certitude (libellés courts,
+    textes japonais inutilisés de la décomp, « NEXT » du guide déclaré `ALIGNED(4)`),
+    les textes dessinés (logo, « TRAINER CARD »), « TIME » de la carte.
+  - Vert Feuille : pas de ROM FR → `pokeleafgreen` reste anglais et le dit
+    (« no French text map for Pokemon LeafGreen yet »).
+- **2026-11-26 (fin) — Vert Feuille français : arrêté ici** (limite d'usage de
+  l'utilisateur ; commit demandé à un point propre).
+  - ROM reçue et rangée : `roms/Pokemon - Version Vert Feuille (France).gba` (`BPGF`
+    rév. 0, sha1 `4b5758c1…`, CRC-32 `BA3285E3`).
+  - Fait : `find_fr_tables.py` → 8 tables trouvées (mêmes votes que Rouge Feu, noms
+    vérifiés en décodant) et écrites dans `lang_tables_pc.c` ; `lang_pc.c` connaît la
+    ROM ; `build_fr_map.py` connaît son sha1 ; `lang/fr_bpgf_reviewed.txt` = la liste
+    relue de Rouge Feu (textes communs aux deux versions, à confirmer par
+    échantillons).
+  - Garde-fou : le français de Vert Feuille ne s'active que si `lang/fr_bpgf.tsv`
+    existe (CMake définit `PFR_HAVE_LANG_MAP`). Ce fichier n'est **pas encore
+    construit** : `pokeleafgreen` reste en anglais (« no French text map… »), vérifié
+    (game_smoke + autotest verts, ROM trouvée mais anglais).
+  - **Reste à faire** :
+    1. `tools/heavy.sh "rouge-feu: table FR Vert Feuille" python
+       src/platform_pc/scripts/lang/build_fr_map.py "…/Vert Feuille (France).gba" build-lg`
+       (build anglais `build-lg` à jour) ;
+    2. relire des échantillons (méthodes `ptr`/`pos`/`table`/`dp`) et les étapes
+       propres à Rouge Feu (habitats décalés, noms de lieux « BOURG PALETTE » +
+       « JADIELLE », préfixes sauvage/ennemi, alias) — les adapter si besoin ;
+    3. `cmake -B build-lg -DPFR_ROM_DIR=…`, recompiler (via `heavy.sh`), `ctest` (le
+       test `game_french` s'ajoute tout seul), captures en français ;
+    4. Linux (`HEAVY_POOL=wsl`, `build-tools/wsl_fr_test.sh`), README, commit.

@@ -1804,6 +1804,51 @@ static const u8 *TryGetStatusString(u8 *src)
     return NULL;
 }
 
+#ifdef PLATFORM_PC
+// The French game (text from the player's French ROM, platform_pc/lang_pc.c)
+// writes the name first, then " sauvage" / " ennemi" (the French versions
+// of sText_WildPkmnPrefix / sText_FoePkmnPrefix, copied from that ROM).
+int pc_lang_is_french(void);
+#define HANDLE_NICKNAME_STRING_CASE(battlerId, monIndex)                \
+    if (GetBattlerSide(battlerId) != B_SIDE_PLAYER && pc_lang_is_french()) \
+    {                                                                   \
+        GetMonData(&gEnemyParty[monIndex], MON_DATA_NICKNAME, text);    \
+        StringGet_Nickname(text);                                       \
+        toCpy = text;                                                   \
+        while (*toCpy != EOS)                                           \
+        {                                                               \
+            dst[dstId] = *toCpy;                                        \
+            dstId++;                                                    \
+            toCpy++;                                                    \
+        }                                                               \
+        if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)                     \
+            toCpy = sText_FoePkmnPrefix;                                \
+        else                                                            \
+            toCpy = sText_WildPkmnPrefix;                               \
+    }                                                                   \
+    else if (GetBattlerSide(battlerId) != B_SIDE_PLAYER)                \
+    {                                                                   \
+        if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)                     \
+            toCpy = sText_FoePkmnPrefix;                                \
+        else                                                            \
+            toCpy = sText_WildPkmnPrefix;                               \
+        while (*toCpy != EOS)                                           \
+        {                                                               \
+            dst[dstId] = *toCpy;                                        \
+            dstId++;                                                    \
+            toCpy++;                                                    \
+        }                                                               \
+        GetMonData(&gEnemyParty[monIndex], MON_DATA_NICKNAME, text);    \
+        StringGet_Nickname(text);                                       \
+        toCpy = text;                                                   \
+    }                                                                   \
+    else                                                                \
+    {                                                                   \
+        GetMonData(&gPlayerParty[monIndex], MON_DATA_NICKNAME, text);   \
+        StringGet_Nickname(text);                                       \
+        toCpy = text;                                                   \
+    }
+#else
 #define HANDLE_NICKNAME_STRING_CASE(battlerId, monIndex)                \
     if (GetBattlerSide(battlerId) != B_SIDE_PLAYER)                     \
     {                                                                   \
@@ -1825,6 +1870,7 @@ static const u8 *TryGetStatusString(u8 *src)
     }                                                                   \
     StringGet_Nickname(text);                                           \
     toCpy = text;
+#endif
 
 u32 BattleStringExpandPlaceholders(const u8 *src, u8 *dst)
 {

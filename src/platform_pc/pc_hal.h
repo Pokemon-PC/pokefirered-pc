@@ -79,6 +79,12 @@ char pc_rom_identify(const char *path);                  /* language letter, 0 =
 bool pc_rom_find_in_dir(const char *dir, char *found, size_t n, char *lang);
 const char *pc_rom_path(void);                           /* NULL if none */
 char pc_rom_language(void);
+bool pc_rom_find_language(char want, char *found, size_t n);   /* lang_pc.c */
+
+/* ---- language (lang_pc.c): English, or French from the player's ROM ---- */
+void pc_lang_set_cli(const char *lang);   /* --lang en|fr|auto */
+void pc_lang_apply(void);
+int pc_lang_is_french(void);
 void pc_rom_log(void);
 
 /* ---- sound output (audio_pc.c) -------------------------------------------- */

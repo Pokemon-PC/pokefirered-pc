@@ -33,6 +33,7 @@ static const char kDefault[] =
     "; Several keys for one button: separate them with commas (A = X, Space).\n"
     "\n"
     "[game]\n"
+    "language = auto    ; auto | en | fr  (fr: French text from your own French ROM, see rom_dir)\n"
     "rom =              ; your own ROM file (optional: the game is built in, the ROM is not needed)\n"
     "rom_dir =          ; folder searched for it, chosen by header (BPR FireRed / BPG LeafGreen)\n"
     "\n"

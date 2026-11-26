@@ -239,6 +239,7 @@ static uint16_t scripted_input(uint64_t frame) {
 static void run_game(void *arg) {
     (void)arg;
     pc_crash_install();
+    pc_lang_apply();          /* French strings, before the snapshot */
     snapshot_game_data();
     if (setjmp(s_reset_jump) != 0) {
         memcpy(GAME_DATA_BEGIN, s_snapshot, s_snapshot_size);
@@ -253,7 +254,7 @@ static void run_game(void *arg) {
 }
 
 int main(int argc, char **argv) {
-    const char *cli_rom = NULL, *cli_dir = NULL;
+    const char *cli_rom = NULL, *cli_dir = NULL, *cli_lang = NULL;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--rom") == 0 && i + 1 < argc) {
             cli_rom = argv[++i];
@@ -263,9 +264,14 @@ int main(int argc, char **argv) {
             cli_dir = argv[++i];
         } else if (strncmp(argv[i], "--rom-dir=", 10) == 0) {
             cli_dir = argv[i] + 10;
+        } else if (strcmp(argv[i], "--lang") == 0 && i + 1 < argc) {
+            cli_lang = argv[++i];
+        } else if (strncmp(argv[i], "--lang=", 7) == 0) {
+            cli_lang = argv[i] + 7;
         }
     }
     pc_rom_set_cli(cli_rom, cli_dir);
+    pc_lang_set_cli(cli_lang);
     const char *e = getenv("PFR_EXIT_AFTER");
     if (e && *e) {
         s_exit_after = strtol(e, NULL, 10);

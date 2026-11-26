@@ -25,6 +25,8 @@ def main():
     ap.add_argument("--dep", required=True)
     ap.add_argument("--data-section", default="",
                     help="put the file's variables in this section (soft reset snapshot)")
+    ap.add_argument("--lang-map", default="", help="French text map (scripts/lang/lang_build.py)")
+    ap.add_argument("--lang-section", default="pfr_lang", help="section of the French text registry")
     a = ap.parse_args(sys.argv[1:split])
     rest = sys.argv[split + 1:]
     src = rest[-1]
@@ -45,6 +47,10 @@ def main():
         return pp.returncode
 
     result = pp.stdout
+    if a.lang_map:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lang"))
+        import lang_build
+        result = lang_build.patch_c(result, rel, a.lang_map, a.lang_section)
 
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     tmp = a.out + ".tmp"

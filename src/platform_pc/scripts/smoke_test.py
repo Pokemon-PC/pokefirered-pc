@@ -52,6 +52,9 @@ def colors(path):
 def run_game(exe, work, env_extra, timeout=900):
     env = dict(os.environ, PFR_HEADLESS="1", PFR_FAST="1", PFR_HANG_EXIT="1", PFR_TRACE="1")
     env.setdefault("PFR_MUTE", "1")
+    # Inputs are timed on the English text: English unless a test asks
+    # (with rom_dir set, language = auto would switch to French).
+    env.setdefault("PFR_LANG", "en")
     env.update(env_extra)
     r = subprocess.run([exe], cwd=work, env=env, capture_output=True, text=True, timeout=timeout)
     return r.returncode, r.stdout + r.stderr
@@ -197,6 +200,58 @@ def main_save(exe, work, save_name):
                  errors)
     return report(errors, log, "save/continue/menus test passed")
 
+# French texts are longer: control in the bedroom comes ~190 frames later
+# (7908 instead of ~7720); the route is the same, 250 frames later.
+NEW_GAME_FR = "2600-2604:START,3000-7880/30:A"
+
+
+def shift(inputs, n):
+    out = []
+    for part in inputs.split(","):
+        rng, key = part.split(":")
+        a, b = rng.split("-")
+        out.append(f"{int(a) + n}-{int(b) + n}:{key}")
+    return ",".join(out)
+
+
+def main_french(exe, work, rom_dir):
+    """French text from the player's own French ROM, found in rom_dir by its
+    header: Oak's speech, the house, Pallet Town and a wild battle in
+    French, the name tables copied; the same frame differs in English."""
+    import re
+    errors = []
+    rc, log = run_game(exe, work, dict(
+        PFR_LANG="fr", PFR_ROM_DIR=rom_dir, PFR_EXIT_AFTER="10800", PFR_TEST="battle@8950",
+        PFR_INPUT=f"{NEW_GAME_FR},{shift(TO_TOWN, 250)},9450-10700/45:A",
+        PFR_SHOT="2800:controls_fr.bmp,4000:oak_fr.bmp,7970:bedroom_fr.bmp,8940:town_fr.bmp,"
+                 "9250:battle_fr.bmp,9650:battle2_fr.bmp,10200:battle3_fr.bmp"))
+    if crashed(rc, log):
+        errors.append(f"exit {rc}, crash or hang reported")
+    m = re.search(r"lang: French from (.*) \((\d+) strings", log)
+    if not m or int(m.group(2)) < 5000:
+        errors.append("French text not loaded" if not m else f"only {m.group(2)} French strings")
+    elif os.path.normcase(os.path.dirname(os.path.abspath(m.group(1)))) != os.path.normcase(os.path.abspath(rom_dir)):
+        errors.append(f"French ROM not taken from rom_dir: {m.group(1)}")
+    names = re.findall(r"lang: (\w+): (\d+)/(\d+) French names", log)
+    if len(names) < 8 or any(int(a) < int(b) * 0.9 for _, a, b in names):
+        errors.append(f"French name tables: {names}")
+    t = traces(log)
+    if not any("map=3.0 " in l and "free=1" in l for l in t):
+        errors.append("never free in Pallet Town (French run)")
+    if "test: wild battle" not in log:
+        errors.append("the test battle did not start")
+    check_frames(work, ("controls_fr", "oak_fr", "bedroom_fr", "town_fr", "battle_fr", "battle2_fr",
+                        "battle3_fr"), errors)
+    # The same frame in English must differ (Oak's speech: the text is French).
+    rc2, log2 = run_game(exe, work, dict(PFR_LANG="en", PFR_ROM_DIR=rom_dir, PFR_EXIT_AFTER="4050",
+                                         PFR_INPUT=NEW_GAME, PFR_SHOT="4000:oak_en.bmp"))
+    if "lang: English" not in log2:
+        errors.append("English not chosen with PFR_LANG=en")
+    en, fr = (os.path.join(work, n + ".bmp") for n in ("oak_en", "oak_fr"))
+    if os.path.exists(en) and os.path.exists(fr) and frame_bytes(en) == frame_bytes(fr):
+        errors.append("French and English frames are identical")
+    return report(errors, log, f"French test passed ({m.group(2) if m else '?'} strings, {m.group(1) if m else ''})")
+
 
 def prepare(work):
     os.makedirs(work, exist_ok=True)
@@ -217,6 +272,8 @@ def main():
         return main_world(exe, work)
     if mode == "save":
         return main_save(exe, work, save_name)
+    if mode == "french":
+        return main_french(exe, work, args[2])
     return main_smoke(exe, work)
 
 

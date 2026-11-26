@@ -45,6 +45,9 @@ cmake --build build-lg
 
 Tests : `cd build-pc && ctest` (couche matériel ; démarrage, intro, titre, nouvelle
 partie avec la musique ; maison, Bourg Palette et un combat ; menus, sauvegarde et reprise).
+Avec ta ROM française : `cmake -B build-pc -DPFR_ROM_DIR="D:/chemin/des/roms"` ajoute le
+test `game_french` (nouvelle partie, maison, Bourg Palette et combat en français ; tables
+de noms copiées ; la même image diffère en anglais).
 
 Paquet à distribuer : `python src/platform_pc/scripts/package.py` →
 `dist/pokefirered-pc-<commit>.zip` (les exe construits + README ; jamais de sauvegarde,
@@ -71,10 +74,9 @@ séparés par des virgules). Une manette reconnue par SDL fonctionne aussi.
 
 ## ROM du joueur (facultative) : `rom_dir`
 
-Le jeu n'a **pas besoin de ROM** pour tourner : tout est compilé depuis la décomp
-(textes en anglais). Il sait toutefois retrouver la ROM du joueur, pour un lanceur ou
-de futures fonctions (par exemple les textes français) ; au démarrage, le journal
-indique ce qu'il a trouvé (`rom: … (BPRF)`).
+Le jeu n'a **pas besoin de ROM** pour tourner en anglais : tout est compilé depuis la
+décomp. La ROM **française** du joueur sert à jouer en français (section suivante) ; au
+démarrage, le journal indique ce qui a été trouvé (`rom: … (BPRF)`, `lang: …`).
 
 ```ini
 [game]
@@ -90,6 +92,40 @@ code jeu `BPR?` (Rouge Feu) ou `BPG?` (Vert Feuille), somme de contrôle valide 
 (anglais), puis le français, puis les autres. `rom_dir` est vide par défaut ; `rom_dir`
 est aussi accepté avant toute section.
 
+## Langue : anglais ou français (`language`)
+
+```ini
+[game]
+language = auto    ; auto | en | fr
+```
+
+- `en` : textes de la décomp (anglais).
+- `fr` : textes français tirés de **ta propre ROM** « Pokemon - Version Rouge Feu
+  (France) » (code `BPRF`, révision 0, vérifiée par CRC-32 `5DC668F6`), trouvée comme
+  ci-dessus (`rom`, dossier de l'exe, `rom_dir`, dossier courant). Sans elle : anglais,
+  avec un message dans le journal.
+- `auto` (défaut) : français si cette ROM est trouvée, sinon anglais.
+- Aussi : `--lang en|fr|auto`, `PFR_LANG`.
+
+Ce qui est traduit : ~7 570 textes sur 9 280 (82 %) — dialogues, panneaux, combats
+(« RATTATA sauvage utilise MIMI-QUEUE! »), menus, sac, PC, options, résumé, Pokédex,
+aide, noms de lieux — et 8 tables de noms (Pokémon, attaques, talents, types, classes
+et noms de dresseurs, objets, catégories du Pokédex). Restent en anglais : les textes
+non placés avec certitude (un texte faux est pire qu'un texte anglais : environ 18 %,
+surtout des libellés courts et des textes japonais inutilisés de la décomp) et les
+textes dessinés dans les images (logo, carte de dresseur…). Aucun texte de Nintendo
+n'est dans le dépôt ni dans l'exe : seule une table de positions
+(`src/platform_pc/lang/fr_bprf.tsv`) l'est.
+
+**Vert Feuille** : pas encore de français — la ROM « Pokemon - Version Vert Feuille
+(France) » (`BPGF`) est prise en charge (tables de noms, vérification), mais sa table de
+textes (`lang/fr_bpgf.tsv`) reste à construire ; d'ici là `pokeleafgreen` reste en anglais
+et le dit dans son journal.
+
+Refaire la table (après une mise à jour de la décomp) :
+`python src/platform_pc/scripts/lang/build_fr_map.py "chemin/Rouge Feu (France).gba" build-pc`
+(≈ 2 min ; `PFR_LANG_REVIEW=fichier` liste les paires écartées, à relire).
+
 ## Variables d'environnement (tests et débogage)
 
 | Variable | Effet |
@@ -97,6 +133,7 @@ est aussi accepté avant toute section.
 | `PFR_SCALE=n` | taille de la fenêtre (×3 par défaut) |
 | `PFR_MUTE=1` | sans son |
 | `PFR_SAVE=f` | autre fichier de sauvegarde |
+| `PFR_LANG=en\|fr\|auto` | langue (comme `--lang`) |
 | `PFR_ROM=f`, `PFR_ROM_DIR=d` | ROM du joueur, dossier des ROM (comme `--rom`, `--rom-dir`) |
 | `PFR_HEADLESS=1`, `PFR_FAST=1` | sans fenêtre, sans limite de vitesse |
 | `PFR_EXIT_AFTER=N` | quitter après N images |

@@ -104,6 +104,7 @@ def main():
     ap.add_argument("--preproc")
     ap.add_argument("--coff", action="store_true", help="Windows objects")
     ap.add_argument("--raw", action="store_true", help="no preproc/cpp")
+    ap.add_argument("--lang-map", default="", help="French text map (scripts/lang/lang_build.py)")
     a = ap.parse_args(sys.argv[1:split])
     rest = sys.argv[split + 1:]
     src = os.path.relpath(rest[-1], a.root).replace("\\", "/")
@@ -129,6 +130,11 @@ def main():
     text = host_syntax(text, a.coff)
     if a.coff:
         text = define_external_specials(text, a.root)
+    if a.lang_map and not a.raw:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lang"))
+        import lang_build
+        section = '.section .rdata$pfrlang1,"dr"' if a.coff else '.section pfr_lang,"a"'
+        text = lang_build.patch_s(text, a.lang_map, section)
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     with open(a.dep, "wb") as f:
         f.write(deps)

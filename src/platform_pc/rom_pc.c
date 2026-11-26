@@ -39,6 +39,7 @@ static char s_cli_rom[1024], s_cli_dir[1024];
 static char s_found[1100];
 static char s_lang;
 static bool s_searched;
+static char s_want;      /* pc_rom_find_language: only ROMs of this language */
 
 void pc_rom_set_cli(const char *rom, const char *dir) {
     snprintf(s_cli_rom, sizeof s_cli_rom, "%s", rom ? rom : "");
@@ -88,7 +89,7 @@ static void consider(const char *dir, const char *name, char *best, size_t n, in
     snprintf(path, sizeof path, "%s/%s", dir, name);
 #endif
     char l = pc_rom_identify(path);
-    if (l != 0 && lang_rank(l) < *best_rank) {
+    if (l != 0 && (s_want == 0 || l == s_want) && lang_rank(l) < *best_rank) {
         *best_rank = lang_rank(l);
         *best_lang = l;
         snprintf(best, n, "%s", path);
@@ -183,6 +184,36 @@ const char *pc_rom_path(void) {
     }
     s_found[0] = '\0';
     return NULL;
+}
+
+/* The ROM of this game in language `want` ('F'...), same search order as
+ * pc_rom_path(), plus the working folder. For lang_pc.c. */
+bool pc_rom_find_language(char want, char *found, size_t n) {
+    const char *rom = first_set(s_cli_rom, "PFR_ROM", "rom");
+    if (rom) {
+        snprintf(found, n, "%s", rom);
+        return pc_rom_identify(rom) == want;
+    }
+    bool ok = false;
+    s_want = want;
+    char *base = SDL_GetBasePath();
+    if (base) {
+        size_t l = strlen(base);
+        while (l > 1 && (base[l - 1] == '/' || base[l - 1] == '\\')) {
+            base[--l] = '\0';
+        }
+        ok = pc_rom_find_in_dir(base, found, n, NULL);
+        SDL_free(base);
+    }
+    const char *dir = first_set(s_cli_dir, "PFR_ROM_DIR", "rom_dir");
+    if (!ok && dir) {
+        ok = pc_rom_find_in_dir(dir, found, n, NULL);
+    }
+    if (!ok) {
+        ok = pc_rom_find_in_dir(".", found, n, NULL);
+    }
+    s_want = 0;
+    return ok;
 }
 
 char pc_rom_language(void) {
