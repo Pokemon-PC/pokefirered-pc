@@ -564,6 +564,47 @@ def main():
     for i in [i for i in pairs if how[i] in ("dp", "gap") and en[i][0].startswith("s:")]:
         del pairs[i]
 
+    # 10. Twin version as a reference (PFR_LANG_REFERENCE="ROM|map.tsv": the
+    # other French ROM and its checked map, at build time only). FireRed and
+    # LeafGreen share almost all their French text: a string whose reference
+    # French text is found in this ROM takes that position (same bytes) (it
+    # fixed LeafGreen's move descriptions, two entries off by the table
+    # vote); table/aligned pairs the reference did not keep are dropped. The
+    # version's own texts (its Pokedex) are not in the other ROM: kept.
+    ref = os.environ.get("PFR_LANG_REFERENCE", "")
+    if ref:
+        ref_rom_path, ref_map_path = ref.split("|")
+        ref_rom = open(ref_rom_path, "rb").read()
+        ref_map = {}
+        for line in open(ref_map_path, encoding="utf-8"):
+            if not line.startswith("#"):
+                k, o, fl = line.split("\t")[:3]
+                ref_map[k] = (int(o, 16), int(fl))
+        index = {key: i for i, (key, _) in enumerate(en)}
+        moved = added = dropped_ref = 0
+        for k, (o, fl) in ref_map.items():
+            i = index.get(k)
+            rb = ref_rom[o:o + fl]
+            if i is None or len(rb) < 2:
+                continue
+            if i in pairs and fr[pairs[i]][1] == rb:
+                continue                   # already the same French text
+            first = rom.find(rb)           # same bytes: any copy is the same text
+            if first < 0:
+                continue
+            fr.append((first, rb))
+            if i in pairs:
+                moved += 1
+            else:
+                added += 1
+            pairs[i] = len(fr) - 1
+            how[i] = "ref"
+        for i in [i for i in pairs if how[i] in ("table", "dp", "gap") and en[i][0] not in ref_map]:
+            del pairs[i]
+            dropped_ref += 1
+        print(f"reference {os.path.basename(ref_rom_path)}: {moved} moved, {added} added, "
+              f"{dropped_ref} dropped (not kept in the reference)", flush=True)
+
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(f"# English -> French ({rom_name}, {code}, sha1 {want_sha})\n")
@@ -574,7 +615,7 @@ def main():
             f.write(f"{key}\t0x{off:06X}\t{len(fb)}\t{len(b)}\t{how[i]}\n")
     n = len(pairs)
     print(f"mapped {n}/{len(en)} ({100 * n / len(en):.1f}%) -> {out_path}")
-    for k in ("ptr", "pos", "table", "anchor", "dp", "gap"):
+    for k in ("ptr", "pos", "table", "anchor", "dp", "gap", "ref"):
         print(f"  {k}: {sum(1 for i in pairs if how[i] == k)}")
 
 

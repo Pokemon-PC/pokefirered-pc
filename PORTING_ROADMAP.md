@@ -74,7 +74,7 @@ couche `src/platform_pc/`, les scripts, le CMake et les tests sont repris.
 | M5 Son | MP2K en C (repris) | musique de l'intro non muette | ✅ Linux (écoute à faire) |
 | M6 Jeu | nouvelle partie, monde, combat, menus, sauvegarde/reprise, `config.ini`, paquet | tests CTest | ✅ Linux, Rouge Feu et Vert Feuille (4/4 chacun) |
 | M7 Linux / Windows | build + tests | ctest vert | ✅ Linux et Windows (4/4 chaque version) ; CI écrite, pas exécutée |
-| M8 Langues | anglais (décomp) **et** français (ROM FR du joueur), `language = auto\|fr\|en`, `--lang`, `PFR_LANG` | les deux langues testées | ✅ Rouge Feu (`game_french`, Windows et Linux) ; ⏳ Vert Feuille : ROM FR reçue, table à construire (voir journal) |
+| M8 Langues | anglais (décomp) **et** français (ROM FR du joueur), `language = auto\|fr\|en`, `--lang`, `PFR_LANG` | les deux langues testées | ✅ Rouge Feu et Vert Feuille (`game_french`, Windows et Linux) |
 
 ## À faire par l'utilisateur
 
@@ -215,3 +215,28 @@ couche `src/platform_pc/`, les scripts, le CMake et les tests sont repris.
     3. `cmake -B build-lg -DPFR_ROM_DIR=…`, recompiler (via `heavy.sh`), `ctest` (le
        test `game_french` s'ajoute tout seul), captures en français ;
     4. Linux (`HEAVY_POOL=wsl`, `build-tools/wsl_fr_test.sh`), README, commit.
+- **2026-11-26 (suite) — Vert Feuille en français : terminé.**
+  - ROM rangée par la session dans `roms/` (fournie par l'utilisateur à la racine de
+    `pokemonall`, déplacée sur sa demande ; à ajouter à `roms/README.md`, qui appartient
+    à la session principale).
+  - Première table (méthode de Rouge Feu seule) : 7 556 textes, mais la comparaison
+    avec Rouge Feu (mêmes textes dans les deux versions) a montré **351 descriptions
+    d'attaques décalées de deux entrées** (le vote de la table de pointeurs s'appuyait
+    sur une paire alignée fausse) et une vingtaine de libellés faux (prix du Casino,
+    Pension, deux chaînes illisibles).
+  - Essai « vote avec les paires sûres seulement » : corrige Vert Feuille mais perd
+    ~900 textes justes et change des textes d'aide de Rouge Feu → abandonné.
+  - Solution : étape 10 de `build_fr_map.py`, **version jumelle comme référence**
+    (`PFR_LANG_REFERENCE="ROM|table"`, au build seulement) : un texte dont le français
+    relu de Rouge Feu existe dans la ROM Vert Feuille prend cette position (mêmes
+    octets) ; les paires table/alignées absentes de la référence sont écartées.
+    Résultat : 7 578 textes (81,7 %) ; comparaison avec Rouge Feu : 7 321 identiques,
+    256 différents = 255 descriptions du Pokédex propres à Vert Feuille (lues par les
+    pointeurs des fiches) + 1 texte de débogage japonais ; plus aucune attaque décalée.
+  - Tables de noms Vert Feuille (8, toutes trouvées) dans `lang_tables_pc.c` ;
+    `lang_pc.c` : ROM `BPGF` rév. 0, CRC-32 `BA3285E3`.
+  - **Tests : Windows 5/5 (`game_french` compris), Linux 5/5** (builds via
+    `tools/heavy.sh`). Captures : discours du Prof. Chen, guide « COMMANDES »,
+    chambre, Bourg Palette, « RATTATA sauvage utilise MIMI-QUEUE! », ATTAQUE/SAC/
+    POKéMON/FUITE ; la même image reste anglaise avec `PFR_LANG=en`.
+    `check_gba_sources.py` : 0 différence. La table de Rouge Feu n'a pas changé.

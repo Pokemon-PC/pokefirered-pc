@@ -45,7 +45,7 @@ cmake --build build-lg
 
 Tests : `cd build-pc && ctest` (couche matériel ; démarrage, intro, titre, nouvelle
 partie avec la musique ; maison, Bourg Palette et un combat ; menus, sauvegarde et reprise).
-Avec ta ROM française : `cmake -B build-pc -DPFR_ROM_DIR="D:/chemin/des/roms"` ajoute le
+Avec ta ROM française : `cmake -B build-pc -DPFR_ROM_DIR="D:/chemin/des/roms"` (ou `build-lg`) ajoute le
 test `game_french` (nouvelle partie, maison, Bourg Palette et combat en français ; tables
 de noms copiées ; la même image diffère en anglais).
 
@@ -117,14 +117,18 @@ textes dessinés dans les images (logo, carte de dresseur…). Aucun texte de Ni
 n'est dans le dépôt ni dans l'exe : seule une table de positions
 (`src/platform_pc/lang/fr_bprf.tsv`) l'est.
 
-**Vert Feuille** : pas encore de français — la ROM « Pokemon - Version Vert Feuille
-(France) » (`BPGF`) est prise en charge (tables de noms, vérification), mais sa table de
-textes (`lang/fr_bpgf.tsv`) reste à construire ; d'ici là `pokeleafgreen` reste en anglais
-et le dit dans son journal.
+**Vert Feuille** : même chose avec « Pokemon - Version Vert Feuille (France) » (`BPGF`,
+révision 0, CRC-32 `BA3285E3`) : ~7 580 textes (`lang/fr_bpgf.tsv`), dont ses propres
+descriptions du Pokédex, et les mêmes 8 tables de noms. Chaque exe ne lit que la ROM
+de son jeu.
 
 Refaire la table (après une mise à jour de la décomp) :
 `python src/platform_pc/scripts/lang/build_fr_map.py "chemin/Rouge Feu (France).gba" build-pc`
 (≈ 2 min ; `PFR_LANG_REVIEW=fichier` liste les paires écartées, à relire).
+Vert Feuille se construit avec Rouge Feu (relu) comme référence — les deux versions
+partagent presque tous leurs textes :
+`PFR_LANG_REFERENCE="…/Rouge Feu (France).gba|src/platform_pc/lang/fr_bprf.tsv" python
+src/platform_pc/scripts/lang/build_fr_map.py "…/Vert Feuille (France).gba" build-lg`.
 
 ## Variables d'environnement (tests et débogage)
 
